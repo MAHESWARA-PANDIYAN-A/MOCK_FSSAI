@@ -40,6 +40,15 @@ class Settings(BaseSettings):
         "http://localhost:8001",
         "http://127.0.0.1:8001",
     ]
+
+    @property
+    def cors_origins(self) -> List[str]:
+        origins = list(self.ALLOWED_ORIGINS)
+        if self.FRONTEND_URL and self.FRONTEND_URL not in origins:
+            origins.append(self.FRONTEND_URL)
+        if self.MAIN_SIH_PORTAL_URL and self.MAIN_SIH_PORTAL_URL not in origins:
+            origins.append(self.MAIN_SIH_PORTAL_URL)
+        return origins
     
     # File Storage
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../uploads")))

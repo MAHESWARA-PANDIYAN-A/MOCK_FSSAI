@@ -8,11 +8,27 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.8
+      - key: PROJECT_NAME
+        value: "Mock FSSAI / Food Safety Approval Portal"
+      - key: ENV
+        value: production
       - key: DATABASE_URL
         value: sqlite:///./fssai_mock.db
       - key: JWT_SECRET
         generateValue: true
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 10080
       - key: MOCK_FSSAI_API_KEY
         value: fssai-mock-secret-key-2026
       - key: FRONTEND_URL
-        value: http://localhost:5173
+        value: http://localhost:5175
+      - key: MAIN_SIH_PORTAL_URL
+        value: http://localhost:3000
+      - key: UPLOAD_DIR
+        value: /app/uploads
+      - key: MAX_UPLOAD_SIZE_MB
+        value: 5
+      - key: MOCK_OTP
+        value: 123456
+      - key: SIH_WEBHOOK_URL
+        value: ""
