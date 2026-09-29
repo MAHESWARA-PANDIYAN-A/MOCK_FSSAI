@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fssai_mock_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://fssai_user:fssai_pass@db:5432/mock_fssai
+      - JWT_SECRET=super-secret-fssai-mock-jwt-key-2026-sih
+      - MOCK_FSSAI_API_KEY=fssai-mock-secret-key-2026
+      - FRONTEND_URL=http://localhost:5173
+      - UPLOAD_DIR=/app/uploads
+      - MOCK_OTP=123456
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fssai_mock_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: fssai_mock_postgres
+    environment:
+      - POSTGRES_USER=fssai_user
+      - POSTGRES_PASSWORD=fssai_pass
+      - POSTGRES_DB=mock_fssai
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
