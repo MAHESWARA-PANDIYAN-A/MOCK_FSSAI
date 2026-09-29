@@ -1,8 +1,9 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, status, Depends
+from fastapi import FastAPI, Request, status, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import text
@@ -111,7 +112,7 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 # Health check & Root info
-@app.get("/", tags=["Root"])
+@app.get("/api/info", tags=["Root"])
 def root_info():
     return {
         "service": "Mock FSSAI / Food Safety Approval Portal (SIH26130)",
@@ -159,3 +160,54 @@ def get_documents_compatibility(
 ):
     from app.routers.documents import get_application_documents_status
     return get_application_documents_status(app_id_or_number=application_id, current_user=None, db=db)
+
+# -------------------------------------------------------------
+# Frontend Static Assets & Client-Side SPA Catch-All
+# -------------------------------------------------------------
+FRONTEND_DIST_DIR = os.getenv(
+    "FRONTEND_DIST_DIR",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist"))
+)
+
+assets_dir = os.path.join(FRONTEND_DIST_DIR, "assets")
+if os.path.isdir(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
+
+@app.get("/", include_in_schema=False)
+async def serve_root():
+    index_file = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.isfile(index_file):
+        return FileResponse(index_file)
+    return {
+        "service": "Mock FSSAI / Food Safety Approval Portal (SIH26130)",
+        "version": settings.VERSION,
+        "docs_url": "/docs",
+        "redoc_url": "/redoc",
+        "health_check": "/api/health",
+        "status": "online",
+        "frontend": "Not built yet. Build frontend/ into frontend/dist."
+    }
+
+@app.get("/{full_path:path}", include_in_schema=False)
+async def serve_spa_fallback(full_path: str):
+    # Guard against intercepting internal backend and docs routes
+    if (
+        full_path.startswith("api/")
+        or full_path == "api"
+        or full_path.startswith("docs")
+        or full_path.startswith("redoc")
+        or full_path == "openapi.json"
+    ):
+        raise HTTPException(status_code=404, detail="Endpoint not found")
+
+    # Serve static file if directly requested and exists in dist (e.g. vite.svg, favicon.ico)
+    target_file = os.path.join(FRONTEND_DIST_DIR, full_path)
+    if full_path and os.path.isfile(target_file):
+        return FileResponse(target_file)
+
+    # Return index.html for client-side routing
+    index_file = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.isfile(index_file):
+        return FileResponse(index_file)
+
+    raise HTTPException(status_code=404, detail="Page not found")

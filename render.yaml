@@ -1,11 +1,10 @@
 services:
   - type: web
-    name: mock-fssai-backend
+    name: mock-fssai-portal
     runtime: python
     plan: free
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    buildCommand: "./build.sh"
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.8
@@ -16,4 +15,4 @@ services:
       - key: MOCK_FSSAI_API_KEY
         value: fssai-mock-secret-key-2026
       - key: FRONTEND_URL
-        value: https://localhost:5173
+        value: http://localhost:5173
